@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.samples.apps.topeka.model.quiz;
 
 
+import android.annotation.SuppressLint;
 import android.os.Parcel;
 
 import com.google.samples.apps.topeka.helper.AnswerHelper;
 
+@SuppressLint("ParcelCreator")
 public final class MultiSelectQuiz extends OptionsQuiz<String> {
 
     public MultiSelectQuiz(String question, int[] answer, String[] options, boolean solved) {

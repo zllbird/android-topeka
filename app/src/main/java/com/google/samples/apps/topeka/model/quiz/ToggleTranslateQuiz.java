@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.samples.apps.topeka.model.quiz;
 
+import android.annotation.SuppressLint;
 import android.os.Parcel;
 
 import com.google.samples.apps.topeka.helper.AnswerHelper;
 
 import java.util.Arrays;
 
+@SuppressLint("ParcelCreator")
 public final class ToggleTranslateQuiz extends OptionsQuiz<String[]> {
 
     private String[] mReadableOptions;

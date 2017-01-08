@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.samples.apps.topeka.model.quiz;
 
+import android.annotation.SuppressLint;
 import android.os.Parcel;
 
+@SuppressLint("ParcelCreator")
 public final class AlphaPickerQuiz extends Quiz<String> {
 
     public AlphaPickerQuiz(String question, String answer, boolean solved) {

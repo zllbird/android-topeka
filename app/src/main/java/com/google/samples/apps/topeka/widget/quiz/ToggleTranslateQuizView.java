@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.samples.apps.topeka.widget.quiz;
 
 import android.annotation.SuppressLint;
@@ -33,8 +34,7 @@ import com.google.samples.apps.topeka.model.Category;
 import com.google.samples.apps.topeka.model.quiz.ToggleTranslateQuiz;
 
 @SuppressLint("ViewConstructor")
-public class ToggleTranslateQuizView extends AbsQuizView<ToggleTranslateQuiz>
-        implements AdapterView.OnItemClickListener {
+public class ToggleTranslateQuizView extends AbsQuizView<ToggleTranslateQuiz> {
 
     private static final String KEY_ANSWERS = "ANSWERS";
 
@@ -43,7 +43,11 @@ public class ToggleTranslateQuizView extends AbsQuizView<ToggleTranslateQuiz>
 
     public ToggleTranslateQuizView(Context context, Category category, ToggleTranslateQuiz quiz) {
         super(context, category, quiz);
-        mAnswers = new boolean[quiz.getOptions().length];
+        initAnswerSpace();
+    }
+
+    private void initAnswerSpace() {
+        mAnswers = new boolean[getQuiz().getOptions().length];
     }
 
     @Override
@@ -54,7 +58,17 @@ public class ToggleTranslateQuizView extends AbsQuizView<ToggleTranslateQuiz>
         mListView.setAdapter(new OptionsQuizAdapter(getQuiz().getReadableOptions(),
                 R.layout.item_answer));
         mListView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE);
-        mListView.setOnItemClickListener(this);
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                toggleAnswerFor(position);
+                if (view instanceof CompoundButton) {
+                    ((CompoundButton) view).setChecked(mAnswers[position]);
+                }
+
+                allowAnswer();
+            }
+        });
         return mListView;
     }
 
@@ -79,22 +93,13 @@ public class ToggleTranslateQuizView extends AbsQuizView<ToggleTranslateQuiz>
         }
         mAnswers = savedInput.getBooleanArray(KEY_ANSWERS);
         if (mAnswers == null) {
+            initAnswerSpace();
             return;
         }
         ListAdapter adapter = mListView.getAdapter();
         for (int i = 0; i < mAnswers.length; i++) {
             mListView.performItemClick(mListView.getChildAt(i), i, adapter.getItemId(i));
         }
-    }
-
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        toggleAnswerFor(position);
-        if (view instanceof CompoundButton) {
-            ((CompoundButton) view).toggle();
-        }
-
-        allowAnswer();
     }
 
     private void toggleAnswerFor(int answerId) {

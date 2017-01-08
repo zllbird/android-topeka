@@ -16,8 +16,10 @@
 
 package com.google.samples.apps.topeka.model.quiz;
 
+import android.annotation.SuppressLint;
 import android.os.Parcel;
 
+@SuppressLint("ParcelCreator")
 public final class PickerQuiz extends Quiz<Integer> {
 
     private final int mMin;
@@ -70,7 +72,6 @@ public final class PickerQuiz extends Quiz<Integer> {
         dest.writeInt(mStep);
     }
 
-    @SuppressWarnings("SimplifiableIfStatement")
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -79,6 +80,7 @@ public final class PickerQuiz extends Quiz<Integer> {
         if (!(o instanceof PickerQuiz)) {
             return false;
         }
+        //noinspection EqualsBetweenInconvertibleTypes
         if (!super.equals(o)) {
             return false;
         }
@@ -88,6 +90,7 @@ public final class PickerQuiz extends Quiz<Integer> {
         if (mMin != that.mMin) {
             return false;
         }
+        //noinspection SimplifiableIfStatement
         if (mMax != that.mMax) {
             return false;
         }

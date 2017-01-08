@@ -16,8 +16,10 @@
 
 package com.google.samples.apps.topeka.model.quiz;
 
+import android.annotation.SuppressLint;
 import android.os.Parcel;
 
+@SuppressLint("ParcelCreator")
 public final class FillBlankQuiz extends Quiz<String> {
 
     private final String mStart;
@@ -53,6 +55,11 @@ public final class FillBlankQuiz extends Quiz<String> {
     @Override
     public QuizType getType() {
         return QuizType.FILL_BLANK;
+    }
+
+    @Override
+    public boolean isAnswerCorrect(String answer) {
+        return getAnswer().equalsIgnoreCase(answer);
     }
 
     @Override

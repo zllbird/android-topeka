@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc.
+ * Copyright 2015 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,52 +16,76 @@
 
 package com.google.samples.apps.topeka.activity;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
+import android.databinding.DataBindingUtil;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.transition.TransitionInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toolbar;
 
 import com.google.samples.apps.topeka.R;
+import com.google.samples.apps.topeka.databinding.ActivityCategorySelectionBinding;
 import com.google.samples.apps.topeka.fragment.CategorySelectionFragment;
+import com.google.samples.apps.topeka.helper.ApiLevelHelper;
 import com.google.samples.apps.topeka.helper.PreferencesHelper;
 import com.google.samples.apps.topeka.model.Player;
 import com.google.samples.apps.topeka.persistence.TopekaDatabaseHelper;
-import com.google.samples.apps.topeka.widget.AvatarView;
 
-public class CategorySelectionActivity extends Activity {
+public class CategorySelectionActivity extends AppCompatActivity {
 
     private static final String EXTRA_PLAYER = "player";
 
-    public static void start(Context context, Player player, ActivityOptions options) {
-        Intent starter = new Intent(context, CategorySelectionActivity.class);
-        starter.putExtra(EXTRA_PLAYER, player);
-        context.startActivity(starter, options.toBundle());
+    public static void start(Activity activity, Player player, ActivityOptionsCompat options) {
+        Intent starter = getStartIntent(activity, player);
+        ActivityCompat.startActivity(activity, starter, options.toBundle());
     }
 
     public static void start(Context context, Player player) {
+        Intent starter = getStartIntent(context, player);
+        context.startActivity(starter);
+    }
+
+    @NonNull
+    static Intent getStartIntent(Context context, Player player) {
         Intent starter = new Intent(context, CategorySelectionActivity.class);
         starter.putExtra(EXTRA_PLAYER, player);
-        context.startActivity(starter);
+        return starter;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        setContentView(R.layout.activity_category_selection);
+        ActivityCategorySelectionBinding binding = DataBindingUtil
+                .setContentView(this, R.layout.activity_category_selection);
         Player player = getIntent().getParcelableExtra(EXTRA_PLAYER);
-        setUpToolbar(player);
+        if (!PreferencesHelper.isSignedIn(this)) {
+            if (player == null) {
+                player = PreferencesHelper.getPlayer(this);
+            } else {
+                PreferencesHelper.writeToPreferences(this, player);
+            }
+        }
+        binding.setPlayer(player);
+        setUpToolbar();
         if (savedInstanceState == null) {
             attachCategoryGridFragment();
         } else {
             setProgressBarVisibility(View.GONE);
         }
+        supportPostponeEnterTransition();
     }
 
     @Override
@@ -72,20 +96,25 @@ public class CategorySelectionActivity extends Activity {
         scoreView.setText(getString(R.string.x_points, score));
     }
 
-    private void setUpToolbar(Player player) {
+    private void setUpToolbar() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_player);
-        setActionBar(toolbar);
+        setSupportActionBar(toolbar);
         //noinspection ConstantConditions
-        getActionBar().setDisplayShowTitleEnabled(false);
-        final AvatarView avatarView = (AvatarView) toolbar.findViewById(R.id.avatar);
-        avatarView.setImageDrawable(getDrawable(player.getAvatar().getDrawableId()));
-        ((TextView) toolbar.findViewById(R.id.title)).setText(getDisplayName(player));
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_category, menu);
         return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.category_container);
+        if (fragment != null) {
+            fragment.onActivityResult(requestCode, resultCode, data);
+        }
     }
 
     @Override
@@ -99,21 +128,26 @@ public class CategorySelectionActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
+    @SuppressLint("NewApi")
     private void signOut() {
         PreferencesHelper.signOut(this);
         TopekaDatabaseHelper.reset(this);
-        SignInActivity.start(this, false, null);
-        finishAfterTransition();
-    }
-
-    private String getDisplayName(Player player) {
-        return getString(R.string.player_display_name, player.getFirstName(),
-                player.getLastInitial());
+        if (ApiLevelHelper.isAtLeast(Build.VERSION_CODES.LOLLIPOP)) {
+            getWindow().setExitTransition(TransitionInflater.from(this)
+                    .inflateTransition(R.transition.category_enter));
+        }
+        SignInActivity.start(this, false);
+        finish();
     }
 
     private void attachCategoryGridFragment() {
-        getFragmentManager().beginTransaction()
-                .replace(R.id.quiz_container, CategorySelectionFragment.newInstance())
+        FragmentManager supportFragmentManager = getSupportFragmentManager();
+        Fragment fragment = supportFragmentManager.findFragmentById(R.id.category_container);
+        if (!(fragment instanceof CategorySelectionFragment)) {
+            fragment = CategorySelectionFragment.newInstance();
+        }
+        supportFragmentManager.beginTransaction()
+                .replace(R.id.category_container, fragment)
                 .commit();
         setProgressBarVisibility(View.GONE);
     }

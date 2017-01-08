@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.samples.apps.topeka.widget.quiz;
 
 import android.annotation.SuppressLint;
@@ -50,10 +51,26 @@ public class TrueFalseQuizView extends AbsQuizView<TrueFalseQuiz> {
     protected View createQuizContentView() {
         final ViewGroup container = (ViewGroup) getLayoutInflater().inflate(
                 R.layout.quiz_radio_group_true_false, this, false);
-        mAnswerTrue = container.findViewById(R.id.answerTrue);
-        mAnswerTrue.setOnClickListener(this);
-        mAnswerFalse = container.findViewById(R.id.answerFalse);
-        mAnswerFalse.setOnClickListener(this);
+
+        OnClickListener clickListener = new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                switch (v.getId()) {
+                    case R.id.answer_true:
+                        mAnswer = true;
+                        break;
+                    case R.id.answer_false:
+                        mAnswer = false;
+                        break;
+                }
+                allowAnswer();
+            }
+        };
+
+        mAnswerTrue = container.findViewById(R.id.answer_true);
+        mAnswerTrue.setOnClickListener(clickListener);
+        mAnswerFalse = container.findViewById(R.id.answer_false);
+        mAnswerFalse.setOnClickListener(clickListener);
         return container;
     }
 
@@ -81,19 +98,5 @@ public class TrueFalseQuizView extends AbsQuizView<TrueFalseQuiz> {
     private void performSelection(View selection) {
         selection.performClick();
         selection.setSelected(true);
-    }
-
-    @Override
-    public void onClick(View v) {
-        super.onClick(v);
-        switch (v.getId()) {
-            case R.id.answerTrue:
-                mAnswer = true;
-                break;
-            case R.id.answerFalse:
-                mAnswer = false;
-                break;
-        }
-        allowAnswer();
     }
 }

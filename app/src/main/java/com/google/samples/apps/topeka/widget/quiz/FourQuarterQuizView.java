@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.samples.apps.topeka.widget.quiz;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -24,12 +26,12 @@ import android.widget.GridView;
 
 import com.google.samples.apps.topeka.R;
 import com.google.samples.apps.topeka.adapter.OptionsQuizAdapter;
+import com.google.samples.apps.topeka.helper.ApiLevelHelper;
 import com.google.samples.apps.topeka.model.Category;
 import com.google.samples.apps.topeka.model.quiz.FourQuarterQuiz;
 
 @SuppressLint("ViewConstructor")
-public class FourQuarterQuizView extends AbsQuizView<FourQuarterQuiz>
-        implements AdapterView.OnItemClickListener {
+public class FourQuarterQuizView extends AbsQuizView<FourQuarterQuiz> {
 
     private static final String KEY_ANSWER = "ANSWER";
     private int mAnswered = -1;
@@ -46,7 +48,13 @@ public class FourQuarterQuizView extends AbsQuizView<FourQuarterQuiz>
         mAnswerView.setNumColumns(2);
         mAnswerView.setAdapter(new OptionsQuizAdapter(getQuiz().getOptions(),
                 R.layout.item_answer));
-        mAnswerView.setOnItemClickListener(this);
+        mAnswerView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                allowAnswer();
+                mAnswered = position;
+            }
+        });
         return mAnswerView;
     }
 
@@ -58,19 +66,22 @@ public class FourQuarterQuizView extends AbsQuizView<FourQuarterQuiz>
     }
 
     @Override
+    @SuppressLint("NewApi")
     public void setUserInput(Bundle savedInput) {
         if (savedInput == null) {
             return;
         }
         mAnswered = savedInput.getInt(KEY_ANSWER);
         if (mAnswered != -1) {
-            if (isLaidOut()) {
+            if (ApiLevelHelper.isAtLeast(Build.VERSION_CODES.KITKAT) && isLaidOut()) {
                 setUpUserInput();
             } else {
                 addOnLayoutChangeListener(new OnLayoutChangeListener() {
                     @Override
-                    public void onLayoutChange(View v, int left, int top, int right, int bottom,
-                            int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    public void onLayoutChange(View v, int left, int top,
+                                               int right, int bottom,
+                                               int oldLeft, int oldTop,
+                                               int oldRight, int oldBottom) {
                         v.removeOnLayoutChangeListener(this);
                         setUpUserInput();
                     }
@@ -84,12 +95,6 @@ public class FourQuarterQuizView extends AbsQuizView<FourQuarterQuiz>
                 mAnswerView.getAdapter().getItemId(mAnswered));
         mAnswerView.getChildAt(mAnswered).setSelected(true);
         mAnswerView.setSelection(mAnswered);
-    }
-
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        allowAnswer();
-        mAnswered = position;
     }
 
     @Override

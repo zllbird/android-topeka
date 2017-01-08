@@ -17,25 +17,30 @@
 package com.google.samples.apps.topeka.fragment;
 
 import android.app.Activity;
-import android.app.ActivityOptions;
-import android.app.Fragment;
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Pair;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.util.Pair;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.GridView;
+import android.view.ViewTreeObserver;
 
 import com.google.samples.apps.topeka.R;
 import com.google.samples.apps.topeka.activity.QuizActivity;
 import com.google.samples.apps.topeka.adapter.CategoryAdapter;
 import com.google.samples.apps.topeka.helper.TransitionHelper;
 import com.google.samples.apps.topeka.model.Category;
+import com.google.samples.apps.topeka.model.JsonAttributes;
+import com.google.samples.apps.topeka.widget.OffsetDecoration;
 
 public class CategorySelectionFragment extends Fragment {
 
-    private CategoryAdapter mCategoryAdapter;
+    private CategoryAdapter mAdapter;
+    private static final int REQUEST_CATEGORY = 0x2300;
 
     public static CategorySelectionFragment newInstance() {
         return new CategorySelectionFragment();
@@ -43,46 +48,67 @@ public class CategorySelectionFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_categories, container, false);
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
-        setUpQuizGrid((GridView) view.findViewById(R.id.categories));
+        setUpQuizGrid((RecyclerView) view.findViewById(R.id.categories));
         super.onViewCreated(view, savedInstanceState);
     }
 
-    private void setUpQuizGrid(GridView categoriesView) {
-        categoriesView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Activity activity = getActivity();
-                startQuizActivityWithTransition(activity, view.findViewById(R.id.category_title),
-                        mCategoryAdapter.getItem(position));
-            }
-        });
-        mCategoryAdapter = new CategoryAdapter(getActivity());
-        categoriesView.setAdapter(mCategoryAdapter);
+    private void setUpQuizGrid(final RecyclerView categoriesView) {
+        final int spacing = getContext().getResources()
+                .getDimensionPixelSize(R.dimen.spacing_nano);
+        categoriesView.addItemDecoration(new OffsetDecoration(spacing));
+        mAdapter = new CategoryAdapter(getActivity());
+        mAdapter.setOnItemClickListener(
+                new CategoryAdapter.OnItemClickListener() {
+                    @Override
+                    public void onClick(View v, int position) {
+                        Activity activity = getActivity();
+                        startQuizActivityWithTransition(activity,
+                                v.findViewById(R.id.category_title),
+                                mAdapter.getItem(position));
+                    }
+                });
+        categoriesView.setAdapter(mAdapter);
+        categoriesView.getViewTreeObserver()
+                .addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                    @Override
+                    public boolean onPreDraw() {
+                        categoriesView.getViewTreeObserver().removeOnPreDrawListener(this);
+                        getActivity().supportStartPostponedEnterTransition();
+                        return true;
+                    }
+                });
     }
 
     @Override
-    public void onResume() {
-        mCategoryAdapter.notifyDataSetChanged();
-        super.onResume();
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_CATEGORY && resultCode == R.id.solved) {
+            mAdapter.notifyItemChanged(data.getStringExtra(JsonAttributes.ID));
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void startQuizActivityWithTransition(Activity activity, View toolbar,
-            Category category) {
+                                                 Category category) {
 
-        final Pair[] pairs = TransitionHelper.createSafeTransitionParticipants(activity,
+        final Pair[] pairs = TransitionHelper.createSafeTransitionParticipants(activity, false,
                 new Pair<>(toolbar, activity.getString(R.string.transition_toolbar)));
-        ActivityOptions sceneTransitionAnimation = ActivityOptions
+        @SuppressWarnings("unchecked")
+        ActivityOptionsCompat sceneTransitionAnimation = ActivityOptionsCompat
                 .makeSceneTransitionAnimation(activity, pairs);
 
         // Start the activity with the participants, animating from one to the other.
         final Bundle transitionBundle = sceneTransitionAnimation.toBundle();
-        activity.startActivity(QuizActivity.getStartIntent(activity, category), transitionBundle);
+        Intent startIntent = QuizActivity.getStartIntent(activity, category);
+        ActivityCompat.startActivityForResult(activity,
+                startIntent,
+                REQUEST_CATEGORY,
+                transitionBundle);
     }
 
 }
